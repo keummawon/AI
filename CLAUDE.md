@@ -112,6 +112,7 @@ GitHub 저장소: https://github.com/keummawon/AI
 - `README.md` — 프로젝트 소개
 - `CLAUDE.md` — 이 문서. 수업 설계와 작성 지침
 - `review.md` — 자료 검토 체크리스트
+- `spec.md` — 앱 명세 (대상, 45분 수업 흐름, 확인된 사례, 화면별 콘텐츠, 개발 범위). 앱을 만들 때 이 문서를 기준으로 한다.
 - `lessons/` — 단계별 수업 자료
   - `01-사례-탐색.md`
   - `02-개념-알기.md`
