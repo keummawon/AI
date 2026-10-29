@@ -1,0 +1,19 @@
+# 환경 변수 (Firebase 설정값)
+.env
+.env.*
+!.env.example
+
+# Firebase 서비스 계정 키
+serviceAccountKey.json
+*-firebase-adminsdk-*.json
+
+# Firebase / Netlify 로컬 파일
+.firebase/
+firebase-debug.log
+firestore-debug.log
+.netlify/
+
+# 패키지와 빌드 결과물
+node_modules/
+dist/
+build/
