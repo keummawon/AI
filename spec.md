@@ -91,7 +91,7 @@
 
 | 칸 | 입력 방식 | 필수 |
 |---|---|---|
-| 학번 | 숫자 입력 | O |
+| 학번 | 시작 화면에서 입력한 값을 자동으로 사용 | O |
 | 사례 제목 | 한 줄 | O |
 | 출처 링크 | URL | O |
 | 유형 | 개인정보 침해 / 데이터 편향성 / 둘 다 (선택) | O |
@@ -109,7 +109,7 @@
 
 | 칸 | 문장 틀 | 필수 |
 |---|---|---|
-| 학번 | 숫자 입력 | O |
+| 학번 | 시작 화면에서 입력한 값을 자동으로 사용 | O |
 | AI를 쓰는 사람으로서 | "나는 ____할 때 ____하겠다." | O |
 | AI를 만드는 사람이 된다면 | "나는 AI를 만들 때 ____하겠다." | O |
 
@@ -149,3 +149,183 @@
 - ② 편향 체험: 빨간 사과로만 배운 AI가 초록 사과를 틀리는 활동
 - ③ 교사가 고른 좋은 사례를 반 전체에 공유 (학번 숨김)
 - ④ 다짐 카드 이미지 저장, 교사가 승인한 다짐을 익명으로 모은 "다짐 벽"
+
+## 화면 구조 (와이어프레임)
+
+학번은 시작 화면(S0)에서 한 번만 받고, ③·④ 제출에 같은 값을 자동으로 넣는다.
+학생 화면(S1~S4) 위쪽에는 4칸 진행 막대(■■□□)를 둔다.
+
+| ID | 화면 | 대상 |
+|---|---|---|
+| S0 | 시작 | 학생 |
+| S1 | 사례 탐색 | 학생 |
+| S2 | 개념 알기 | 학생 |
+| S3 | 스스로 사례 찾기 | 학생 |
+| S4 | 다짐 쓰기 | 학생 |
+| S5 | 완료 | 학생 |
+| T1 | 교사 로그인 | 교사 |
+| T2 | 교사 대시보드 | 교사 |
+
+```
+S0 시작                      S1 사례 탐색                  S2 개념 알기
+┌────────────────────────┐   ┌────────────────────────┐   ┌────────────────────────┐
+│ AI 윤리 수업            │   │ ■□□□  사례 1 / 2       │   │ ■■□□                   │
+│ [ 학번 입력칸        ]  │   │ [무슨 일이 있었나]      │   │ [개념 카드 4장]         │
+│ 저장 안내:              │   │ [누가 피해를 입었나]    │   │ [짝짓기: 사례 → 유형]   │
+│  학번·제출 내용 저장,   │   │ [왜 문제인가]           │   │ [OX 퀴즈: O / X → 해설] │
+│  선생님만 봄, 수업 후   │   │ [생각 질문 2개]         │   │                        │
+│  삭제                   │   │                        │   │                        │
+│          [수업 시작]    │   │          [다음 사례]    │   │          [다음 단계]    │
+└────────────────────────┘   └────────────────────────┘   └────────────────────────┘
+
+S3 스스로 사례 찾기           S4 다짐 쓰기                  S5 완료
+┌────────────────────────┐   ┌────────────────────────┐   ┌────────────────────────┐
+│ ■■■□                   │   │ ■■■■                   │   │ 수업 완료               │
+│ [도움말: 검색어, 출처]  │   │ [예시 다짐 3개]         │   │ [오늘 배운 두 개념]     │
+│ [사례 제목] [출처 링크] │   │ 쓰는 사람:              │   │ [내 다짐 다시 보기]     │
+│ [유형 선택] [이유]      │   │  나는 __할 때 __하겠다  │   │                        │
+│ [막을 방법]             │   │ 만드는 사람:            │   │                        │
+│                         │   │  나는 AI를 만들 때 __   │   │                        │
+│              [제출]     │   │              [제출]     │   │                        │
+└────────────────────────┘   └────────────────────────┘   └────────────────────────┘
+
+T1 교사 로그인                T2 교사 대시보드
+┌────────────────────────┐   ┌──────────────────────────────────┐
+│ 선생님 화면             │   │ 제출 현황                         │
+│ [Google 계정으로 로그인]│   │ 학번   | 사례 조사 | 다짐         │
+│ 등록된 교사만 입장 가능 │   │ 20101  | 제출      | 제출         │
+│                         │   │ 20102  | 제출      | 미제출       │
+│                         │   │ (행 클릭 → 제출 내용 보기)        │
+│                         │   │              [전체 제출물 삭제]   │
+└────────────────────────┘   └──────────────────────────────────┘
+```
+
+## 설계 로직 (순서도)
+
+### 학생 흐름
+
+```mermaid
+flowchart TD
+  S0["S0 시작 화면<br/>학번 입력, 저장 안내"] --> V{"학번 형식 검사<br/>숫자, 자릿수"}
+  V -- 실패 --> E["칸 옆에 오류 안내"] --> S0
+  V -- 통과 --> A["익명 로그인<br/>Firebase Auth, uid 발급"]
+  A --> S1["S1 사례 탐색<br/>저장 없음"]
+  S1 --> S2["S2 개념 알기<br/>퀴즈는 바로 채점, 저장 없음"]
+  S2 --> S3["S3 사례 찾기 제출<br/>caseReports에 저장"]
+  S3 --> S4["S4 다짐 제출<br/>pledges에 저장"]
+  S4 --> S5["S5 완료"]
+```
+
+### 제출 로직 (③, ④ 공통)
+
+```mermaid
+flowchart TD
+  B["제출 버튼"] --> C{"입력 검사<br/>빈칸, 링크 형식, 글자 수"}
+  C -- 실패 --> CE["칸 옆에 오류 안내"] --> B
+  C -- 통과 --> W["Firestore 저장<br/>문서 ID = 학생 uid, 덮어쓰기"]
+  W --> R{"저장 성공?"}
+  R -- 실패 --> RE["입력 내용 유지, 다시 시도 안내"] --> B
+  R -- 성공 --> N["다음 단계로<br/>③ → ④, ④ → 완료"]
+```
+
+- 문서 ID를 학생 uid로 하므로 한 학생은 컬렉션마다 제출물이 하나다. 다시 제출하면 덮어쓴다.
+- 익명 로그인은 같은 브라우저에서만 유지된다. 브라우저를 바꾸면 새 uid가 생기므로, 교사 화면에서는 학번 기준으로 모아 보여 준다.
+
+### 교사 흐름
+
+```mermaid
+flowchart TD
+  L["T1 Google 로그인"] --> T{"teachers 컬렉션에<br/>내 uid가 있나?"}
+  T -- 없음 --> X["접근 거부 안내"]
+  T -- 있음 --> D["T2 대시보드<br/>학번별 제출 현황, 내용 보기"]
+  D --> Q{"일괄 삭제 확인 창<br/>'삭제'를 직접 입력"}
+  Q -- 취소 --> D
+  Q -- 확인 --> Z["Firestore 삭제<br/>caseReports, pledges 전체"]
+```
+
+## 데이터베이스
+
+- **Firebase 프로젝트**: AI TEST (프로젝트 ID `ai-test-629be`)
+- **데이터베이스**: Firestore 기본 데이터베이스 `(default)`
+- **로그인**: 학생은 익명 로그인, 교사는 Google 로그인
+- ①·②의 퀴즈 답은 저장하지 않는다.
+
+```mermaid
+erDiagram
+  AUTH_USER ||--o| caseReports : "사례 조사 제출"
+  AUTH_USER ||--o| pledges : "다짐 제출"
+  AUTH_USER ||--o| teachers : "교사 등록"
+  AUTH_USER {
+    string uid PK "Firebase Auth"
+    string provider "anonymous 또는 google"
+  }
+  caseReports {
+    string docId PK "= 학생 uid"
+    string studentId "학번"
+    string title "사례 제목"
+    string sourceUrl "출처 링크"
+    string type "privacy, bias, both"
+    string reason "그렇게 생각한 이유"
+    string prevention "막을 방법"
+    timestamp createdAt
+    timestamp updatedAt
+  }
+  pledges {
+    string docId PK "= 학생 uid"
+    string studentId "학번"
+    string asUser "쓰는 사람 다짐"
+    string asMaker "만드는 사람 다짐"
+    timestamp createdAt
+    timestamp updatedAt
+  }
+  teachers {
+    string docId PK "= 교사 uid"
+    string role "teacher"
+  }
+```
+
+### 컬렉션 설명
+
+| 컬렉션 | 문서 ID | 쓰는 사람 | 읽는 사람 | 지우는 사람 |
+|---|---|---|---|---|
+| `caseReports` | 학생 uid | 본인 학생 | 본인 학생, 교사 | 교사 |
+| `pledges` | 학생 uid | 본인 학생 | 본인 학생, 교사 | 교사 |
+| `teachers` | 교사 uid | Firebase 콘솔에서 직접 등록 | 본인 교사 | Firebase 콘솔에서 직접 |
+
+- 학번(`studentId`)은 필드로만 저장한다. 문서 ID, URL, 로그에는 넣지 않는다.
+- 교사 이메일은 코드나 보안 규칙에 쓰지 않는다. 교사는 `teachers` 컬렉션에 uid로만 등록한다.
+
+### 보안 규칙 초안 (`firestore.rules`)
+
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function isOwner(uid) { return signedIn() && request.auth.uid == uid; }
+    function isTeacher() {
+      return signedIn() && exists(/databases/$(database)/documents/teachers/$(request.auth.uid));
+    }
+
+    match /caseReports/{uid} {
+      allow read: if isOwner(uid) || isTeacher();
+      allow create, update: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['studentId', 'title', 'sourceUrl', 'type', 'reason', 'prevention', 'createdAt', 'updatedAt'])
+        && request.resource.data.type in ['privacy', 'bias', 'both'];
+      allow delete: if isTeacher();
+    }
+
+    match /pledges/{uid} {
+      allow read: if isOwner(uid) || isTeacher();
+      allow create, update: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['studentId', 'asUser', 'asMaker', 'createdAt', 'updatedAt']);
+      allow delete: if isTeacher();
+    }
+
+    match /teachers/{uid} {
+      allow read: if isOwner(uid);
+      allow write: if false;
+    }
+  }
+}
+```
